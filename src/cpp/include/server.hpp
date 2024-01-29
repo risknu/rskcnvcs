@@ -14,11 +14,13 @@
 
 class ServerObject {
 public:
-    ServerObject(std::string configuration_path);
+    ServerObject(const std::string host_name, const int port, std::ofstream& log_file);
 private:
     void HandleClient(int clientSocket);
 
-    std::string configuration_path;
+    const std::string host_name;
+    const int port;
+    std::ofstream& log_file;
     std::map<std::string, std::string> properties;
     
     std::vector<int> clients;

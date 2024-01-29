@@ -1,56 +1,46 @@
 #include "include/server.hpp"
+#include <algorithm>
 
-std::map<std::string, std::string> ReadProperties(const std::string& filename) {
-    std::map<std::string, std::string> properties;
-    std::ifstream file(filename);
-    if (file.is_open()) {
-        std::string line;
-        while (std::getline(file, line)) {
-            std::istringstream iss(line);
-            std::string key, value;
-            if (std::getline(iss, key, '=') && std::getline(iss, value)) {
-                properties[key] = value;
-            }
-        }
-        file.close();
-    } else {
-        std::cout << "Can't load '" << filename << "'\n";
-    }
-    return properties;
+void log(const std::string& message_type, const std::string& message, std::ostream& output = std::cout) {
+    output << "[" << message_type << "] " << message << std::endl;
+    std::cout << "[" << message_type << "] " << message << std::endl;
 }
 
-ServerObject::ServerObject(std::string configuration_path) :
-    configuration_path(configuration_path) {
-        properties = ReadProperties(configuration_path);
+bool fileExists(const std::string& filename) {
+    std::ifstream file(filename);
+    return file.good();
+}
 
+ServerObject::ServerObject(const std::string host_name, const int port, std::ofstream& log_file) :
+    host_name(host_name), port(port), log_file(log_file) {
         int server_socket = socket(AF_INET, SOCK_STREAM, 0);
         if (server_socket == -1) {
-            std::cerr << "Error creating server socket" << std::endl;
+            log("CRTE_ERROR", "Error creating server socket", log_file);
         }
         sockaddr_in server_address;
         server_address.sin_family = AF_INET;
-        if (inet_pton(AF_INET, properties["host_name"].c_str(), &server_address.sin_addr) <= 0) {
-            std::cerr << "Invalid address/ Address not supported" << std::endl;
+        if (inet_pton(AF_INET, host_name.c_str(), &server_address.sin_addr) <= 0) {
+            log("INVL_ERROR", "Invalid address/ Address not supported", log_file);
             close(server_socket);
         }
-        server_address.sin_port = htons(std::stoi(properties["port"]));
+        server_address.sin_port = htons(port);
 
         if (bind(server_socket, reinterpret_cast<struct sockaddr*>(&server_address), sizeof(server_address)) == -1) {
-            std::cerr << "Error binding server socket" << std::endl;
+            log("BIND_ERROR", "Error binding server socket", log_file);
             close(server_socket);
         }
 
         if (listen(server_socket, SOMAXCONN) == -1) {
-            std::cerr << "Error listening for connections" << std::endl;
+            log("LSTN_ERROR", "Error listening for connections", log_file);
             close(server_socket);
         }
-
+        log("BIND_COPLETED", "The server has been successfully launched and is listening for connections to it", log_file);
         while (true) {
             sockaddr_in client_address;
             socklen_t client_address_size = sizeof(client_address);
             int client_socket = accept(server_socket, reinterpret_cast<struct sockaddr*>(&client_address), &client_address_size);
             if (client_socket == -1) {
-                std::cerr << "Error accepting connection" << std::endl;
+                log("ACCP_ERROR", "Error accepting connection", log_file);
                 continue;
             }
             clients.push_back(client_socket);
@@ -73,11 +63,46 @@ void ServerObject::HandleClient(int clientSocket) {
             }
         }
     }
-    clients.erase(std::remove(clients.begin(), clients.end(), clientSocket), clients.end());
+    clients.erase(std::remove_if(clients.begin(), clients.end(), [clientSocket](int c) {
+        return c == clientSocket;
+    }));
     close(clientSocket);
 }
 
-int main() {
-    ServerObject server("server.properties");
+int main(int argc, char *argv[]) {
+    int port = 5555;
+    std::string ip = "127.0.0.1";
+    if (argc >= 3) {
+        for (int i = 1; i < argc; i += 2) {
+            if (i + 1 < argc) {
+                if (std::strcmp(argv[i], "-port") == 0) {
+                    port = std::atoi(argv[i + 1]);
+                } else if (std::strcmp(argv[i], "-ip") == 0) {
+                    ip = argv[i + 1];
+                } else {
+                    std::cerr << "Unknown flag: " << argv[i] << std::endl;
+                    return 1;
+                }
+            } else {
+                std::cerr << "Error: Flag " << argv[i] << " requires a value." << std::endl;
+                return 1;
+            }
+        }
+    } else {
+        std::cerr << "Usage: " << argv[0] << " -port <port_number> -ip <ip_address>" << std::endl;
+        return 1; 
+    }
+    const std::string logFileName = "logs/s_log.txt";
+    if (!fileExists(logFileName)) {
+        std::ofstream createFile(logFileName);
+        if (createFile.is_open()) {
+            createFile.close();
+            log("LOGS_COMPLETED", "The log file/folder has been created, logs are being recorded", createFile);
+        } else {
+            return 1;
+        }
+    }
+    std::ofstream logs_file("logs/s_log.txt");
+    ServerObject server(ip, port, logs_file);
     return 0;
 }
