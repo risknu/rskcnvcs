@@ -20,7 +20,7 @@ namespace RskCnv {
         private static readonly Color outlineColor = new Color(25, 25, 25);
 
         static void Main() {
-            networking = new Networking("127.0.0.1", 5555);
+            networking = new Networking("127.0.0.1", 1114);
 
             var window = new RenderWindow(new VideoMode(720, 440), "rskcnv - csharp<cli>");
             window.Closed += OnWindowClose;

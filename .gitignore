@@ -69,12 +69,10 @@ tramp
 # cask packages
 .cask/
 dist/
+pyth/
 
 # Flycheck
 flycheck_*.el
-
-# server auth directory
-/server/
 
 # projectiles files
 .projectile

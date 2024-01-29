@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -std=c++11 -Wall -Wextra
 TARGET = bin/server
-SOURCE = src/cpp/server.cpp
+SOURCE = server/server.cpp server/logger.cpp server/utils/fileutil.cpp
 
 all: $(TARGET)
 
