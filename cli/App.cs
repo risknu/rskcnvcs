@@ -40,7 +40,7 @@ namespace RskCnv {
             Thread receiveThread = new Thread(ReceiveDataFromServer);
             receiveThread.Start();
 
-            window.SetFramerateLimit(1000);
+            window.SetFramerateLimit(2000);
 
             window.TextEntered += (sender, e) => {
                 if (isChatOpen == true) {

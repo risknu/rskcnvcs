@@ -21,7 +21,7 @@ namespace RskCnv {
             char inputChar = e.Unicode[0];
             if (inputChar == '\n' && inputText.Length != 0) {
                 if (inputText.Length < 32) {
-                    networking.SendMessageToServer("\n" + userNickname + " " + inputText);
+                    networking.SendMessageToServer(userNickname + " " + inputText);
                     lock (lockObject) {
                         messageContentBuilder.AppendLine("You: " + inputText);
                     }
