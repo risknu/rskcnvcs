@@ -64,7 +64,7 @@ public class Networking {
             int bytesRead = networkStream.Read(receivedData, 0, receivedData.Length);
             return Encoding.UTF8.GetString(receivedData, 0, bytesRead);
         }
-        return "null";
+        return null;
     }
 
     public void CloseConnection() {
