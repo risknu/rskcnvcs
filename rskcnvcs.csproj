@@ -8,20 +8,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="csfml" Version="2.5.2" />
+    <None Remove="assets\fonts\ARIAL.TTF" />
+    <None Remove="assets\audio\onMove.wav" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="SFML.Net" Version="2.5.1" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <CopyNuGetImplementations>false</CopyNuGetImplementations>
-  </PropertyGroup>
-  
   <ItemGroup>
-    <None Update="fonts/ARIAL.TTF">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    <Content Include="assets\fonts\ARIAL.TTF">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\audio\onMove.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
-
 </Project>

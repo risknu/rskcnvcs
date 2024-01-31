@@ -8,7 +8,6 @@ using SFML.Window;
 
 namespace RskCnv {
     static class App {
-        private static RenderWindow window;
         private static bool shouldExitFromApp = false;
         private static bool isPickerOn = false;
         private static bool isChatOpen = false;
@@ -16,10 +15,10 @@ namespace RskCnv {
 
         private static List<PixelStruct> pixelStructs = new List<PixelStruct>();
         private static List<PixelStruct> temporaryPixels = new List<PixelStruct>();
-        private static Networking networking;
+        private static Networking? networking;
 
         private static Clock clock = new Clock();
-        private static Font textFont = new Font("fonts/ARIAL.TTF");
+        private static Font textFont = new Font("assets/fonts/ARIAL.TTF");
         private static Text fpsText = FPS.CreateFPSText(textFont, clock);
 
         private static readonly object pixelStructsLock = new object();
@@ -31,8 +30,7 @@ namespace RskCnv {
         private static int[] mousePosition = { 0, 0 };
         private static Color selectedColor = new Color(255, 255, 255);
 
-        public static void Initialize() {
-            window = new RenderWindow(new VideoMode(720, 440), "rskcnv - csharp<cli>");
+        public static void Initialize(RenderWindow window) {
             window.Closed += OnWindowClose;
 
             networking = new Networking("127.0.0.1", 2425);
@@ -40,7 +38,7 @@ namespace RskCnv {
             Thread receiveThread = new Thread(ReceiveDataFromServer);
             receiveThread.Start();
 
-            window.SetFramerateLimit(2000);
+            window.SetFramerateLimit(120);
 
             window.TextEntered += (sender, e) => {
                 if (isChatOpen == true) {
@@ -64,7 +62,8 @@ namespace RskCnv {
                     pixelStructs.RemoveAll(p => p.x == x && p.y == y);
                     pixelStructs.Add(pixelStruct);
                 }
-                mousePosition = [e.X, e.Y];
+                mousePosition[0] = e.X;
+                mousePosition[1] = e.Y;
             };
 
             window.KeyPressed += (sender, e) => {
@@ -85,21 +84,13 @@ namespace RskCnv {
             };
 
             BackgroundGenerator.Initialize(new Vector2u(720, 440));
-
-            Text debugText = new Text("fps: -1", textFont, 10);
-            debugText.Position = new Vector2f(2, 15);
-            debugText.FillColor = Color.White;
-            debugText.OutlineColor = Color.Black;
-            debugText.OutlineThickness = 1;
-
+            
             while (window.IsOpen) {
                 window.DispatchEvents();
 
                 window.Clear(Color.Black);
 
                 BackgroundGenerator.UpdateBackground(window);
-                debugText.DisplayedString = pixelStructs.Count.ToString();
-                window.Draw(debugText);
 
                 lock (pixelStructsLock) {
                     RectangleShape rectangle = new RectangleShape(new Vector2f(cellSize, cellSize));
@@ -142,7 +133,6 @@ namespace RskCnv {
                 } else if (receivedData is string receivedString) {
                     Chat.ReceiveMessage(receivedData.ToString());
                 }
-
                 Thread.Sleep(10);
             }
         }

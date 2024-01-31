@@ -36,8 +36,7 @@ public class Networking {
         networkStream.Write(dataToSend, 0, dataToSend.Length);
     }
 
-    public object ReceiveArrayFromServer()
-    {
+    public object ReceiveArrayFromServer() {
         byte[] headerBytes = new byte[sizeof(int)];
         networkStream.Read(headerBytes, 0, headerBytes.Length);
 
