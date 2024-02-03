@@ -2,9 +2,9 @@ using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
 
-namespace RskCnv {
-    static class BackgroundGenerator {
-        private static RenderTexture backgroundTexture;
+namespace RskBox {
+    static public class BackgroundGenerator {
+        private static RenderTexture? backgroundTexture { get; set; }
 
         public static void Initialize(Vector2u size) {
             backgroundTexture = new RenderTexture(size.X, size.Y);
@@ -12,6 +12,7 @@ namespace RskCnv {
         }
 
         private static void GenerateBackgroundTexture(uint width, uint height) {
+            if (backgroundTexture == null) return;
             backgroundTexture.Clear(new Color(0, 0, 0, 0));
 
             RectangleShape smallCell = new RectangleShape(new Vector2f(10, 10));
@@ -40,6 +41,7 @@ namespace RskCnv {
         }
 
         public static void UpdateBackground(RenderWindow window) {
+            if (backgroundTexture == null) return;
             Sprite backgroundSprite = new Sprite(backgroundTexture.Texture);
             window.Draw(backgroundSprite);
         }

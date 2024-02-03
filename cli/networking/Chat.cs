@@ -4,7 +4,7 @@ using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
 
-namespace RskCnv {
+namespace RskBox {
     static class Chat {
         private static readonly object lockObject = new object();
         private static string messageContent = "";
@@ -12,10 +12,6 @@ namespace RskCnv {
 
         private static string userNickname = "CLI<1488>";
         private static string inputText = "";
-
-        private static int chatWidth = 220;
-        private static int chatHeight = 440;
-        private static int lineHeight = 13;
 
         public static void HandleTextInput(TextEventArgs e, Networking networking) {
             char inputChar = e.Unicode[0];
@@ -36,31 +32,31 @@ namespace RskCnv {
             }
         }
 
-        public static void UpdateChat(RenderWindow window, Font font, bool isChatOpen) {
-            if (!isChatOpen) return;
+        public static void UpdateChat(RenderWindow window, Font font, EventHandle isChatOpenEvent) {
+            if (isChatOpenEvent.IsEventModeActive() == false) return;
 
             lock (lockObject) {
                 messageContent = messageContentBuilder.ToString();
             }
 
-            RectangleShape backgroundTextMessages = new RectangleShape(new Vector2f(chatWidth, chatHeight));
+            RectangleShape backgroundTextMessages = new RectangleShape(new Vector2f(220, 440));
             backgroundTextMessages.FillColor = new Color(0, 0, 0, 50);
             window.Draw(backgroundTextMessages);
 
             Text messageText = new Text(messageContent, font, 10);
-            messageText.Position = new Vector2f(2, chatHeight - ((messageContent.Count(c => c == '\n') + 2) * 13));
+            messageText.Position = new Vector2f(2, 440 - ((messageContent.Count(c => c == '\n') + 2) * 13));
             messageText.FillColor = Color.White;
             messageText.OutlineColor = Color.Black;
             messageText.OutlineThickness = 1;
             window.Draw(messageText);
 
-            RectangleShape backgroundText = new RectangleShape(new Vector2f(chatWidth, lineHeight));
+            RectangleShape backgroundText = new RectangleShape(new Vector2f(220, 11));
             backgroundText.FillColor = new Color(0, 0, 0, 75);
-            backgroundText.Position = new Vector2f(0, chatHeight - lineHeight);
+            backgroundText.Position = new Vector2f(0, 440 - 11);
             window.Draw(backgroundText);
 
             Text inputTextDisplay = new Text($"{inputText}", font, 10);
-            inputTextDisplay.Position = new Vector2f(2, chatHeight - lineHeight);
+            inputTextDisplay.Position = new Vector2f(2, 440 - 11);
             inputTextDisplay.FillColor = Color.White;
             inputTextDisplay.OutlineColor = Color.Black;
             inputTextDisplay.OutlineThickness = 1;

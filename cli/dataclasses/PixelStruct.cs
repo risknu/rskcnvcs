@@ -6,7 +6,7 @@ public struct PixelStruct {
     }
 
     public float[] ToArray() {
-        float[] dataToSend = { x, y, r, g, b };
-        return dataToSend;
+        float[] dataToSendPackaged = { x, y, r, g, b };
+        return dataToSendPackaged;
     }
 }

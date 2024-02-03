@@ -1,140 +1,132 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
 
-namespace RskCnv {
-    static class App {
-        private static bool shouldExitFromApp = false;
-        private static bool isPickerOn = false;
-        private static bool isChatOpen = false;
-        private static bool isDrawing = false;
+namespace RskBox {
+    static public class App {
+        private static PropertiesParser propertiesParser = new PropertiesParser();
+        private static Networking? networking { get; set; }
 
-        private static List<PixelStruct> pixelStructs = new List<PixelStruct>();
-        private static List<PixelStruct> temporaryPixels = new List<PixelStruct>();
-        private static Networking? networking;
+        private static Font customFont = new Font("assets/PPMori-Regular.otf");
+        private static Text FPSCustomText = CustomText.CreateText(customFont, new Vector2f(2.0f, 2.0f), Color.White, 10);
 
         private static Clock clock = new Clock();
-        private static Font textFont = new Font("assets/fonts/ARIAL.TTF");
-        private static Text fpsText = FPS.CreateFPSText(textFont, clock);
-
-        private static readonly object pixelStructsLock = new object();
-
-        private const int outlineThickness = 1;
-        private static readonly Color outlineColor = new Color(25, 25, 25);
-
-        private static int cellSize = 10;
-        private static int[] mousePosition = { 0, 0 };
         private static Color selectedColor = new Color(255, 255, 255);
+        private static int[] mousePositionData = { 0, 0 };
 
-        public static void Initialize(RenderWindow window) {
-            window.Closed += OnWindowClose;
+        private static PixelRenderer pixelRenderer = new PixelRenderer();
+        
+        private static EventHandle drawEvent = new EventHandle();
+        private static EventHandle colorPickerEvent = new EventHandle();
+        private static EventHandle chatOpenEvent = new EventHandle();
+        private static EventHandle shouldExitFromAppEvent = new EventHandle();
+
+        public static void RunApp(RenderWindow windowNew) {
+            propertiesParser.LoadPropertiesFile("rskbox.properties");
+            RenderWindow window = windowNew;
+            window.SetFramerateLimit(uint.Parse(propertiesParser.GetValue("WindowFramerateLimit")));
 
             networking = new Networking("127.0.0.1", 2425);
-
             Thread receiveThread = new Thread(ReceiveDataFromServer);
             receiveThread.Start();
 
-            window.SetFramerateLimit(120);
-
-            window.TextEntered += (sender, e) => {
-                if (isChatOpen == true) {
-                    Chat.HandleTextInput(e, networking);
-                }
-            };
-
-            window.MouseButtonPressed += (sender, e) => isDrawing = true;
-            window.MouseButtonReleased += (sender, e) => {
-                isDrawing = false;
-                networking.SendArrayToServer(temporaryPixels);
-                temporaryPixels.Clear();
-            };
-            window.MouseMoved += (sender, e) => {
-                if (isDrawing) {
-                    float x = e.X / cellSize;
-                    float y = e.Y / cellSize;
-                    PixelStruct pixelStruct = new PixelStruct(x, y, selectedColor.R, selectedColor.G, selectedColor.B);
-                    temporaryPixels.RemoveAll(p => p.x == x && p.y == y);
-                    temporaryPixels.Add(pixelStruct);
-                    pixelStructs.RemoveAll(p => p.x == x && p.y == y);
-                    pixelStructs.Add(pixelStruct);
-                }
-                mousePosition[0] = e.X;
-                mousePosition[1] = e.Y;
-            };
-
-            window.KeyPressed += (sender, e) => {
-                if (e.Code == Keyboard.Key.T && isChatOpen == false) {
-                    isChatOpen = true;
-                } else if (e.Code == Keyboard.Key.Escape && isChatOpen == true) {
-                    isChatOpen = false;
-                }
-                
-                if (e.Code == Keyboard.Key.A) {
-                    isPickerOn = true;
-                }
-            };
-            window.KeyReleased += (sender, e) => {
-                if (e.Code == Keyboard.Key.A) {
-                    isPickerOn = false;
-                }
-            };
-
-            BackgroundGenerator.Initialize(new Vector2u(720, 440));
+            EventHandlerWindow(window, receiveThread);
             
+            Start(window);
             while (window.IsOpen) {
                 window.DispatchEvents();
-
                 window.Clear(Color.Black);
 
-                BackgroundGenerator.UpdateBackground(window);
-
-                lock (pixelStructsLock) {
-                    RectangleShape rectangle = new RectangleShape(new Vector2f(cellSize, cellSize));
-                    foreach (var pixel in pixelStructs) {
-                        rectangle.Position = new Vector2f(pixel.x * cellSize, pixel.y * cellSize);
-                        rectangle.FillColor = new Color((byte)pixel.r, (byte)pixel.g, (byte)pixel.b);
-                        window.Draw(rectangle);
-                    }
-                }
-
-                selectedColor = ColorPicker.HandleColorPicker(window, mousePosition, isPickerOn, selectedColor, cellSize);
-                UpdateUI(window, textFont);
+                Update(window);
+                UpdateUI(window);
 
                 window.Display();
             }
         }
 
-        private static void UpdateUI(RenderWindow window, Font font) {
-            FPS.UpdateFPSText(fpsText, clock);
-            window.Draw(fpsText);
-            if (!isChatOpen) return;
+        private static void EventHandlerWindow(RenderWindow window, Thread receiveThread) {
+            window.Closed += (sender, e) => {
+                if (networking == null) return;
+                window.Close();
+                shouldExitFromAppEvent.DeactivateEventMode();
+                networking.CloseConnection();
+                receiveThread.Join();
+            };
 
-            Chat.UpdateChat(window, font, isChatOpen);
-        }
+            window.TextEntered += (sender, e) => {
+                if (networking == null) return;
+                if (chatOpenEvent.IsEventModeActive() == true) {
+                    Chat.HandleTextInput(e, networking);
+                }
+            };
 
-        private static void OnWindowClose(object? sender, EventArgs e) {
-            RenderWindow window = (RenderWindow)sender!;
-            networking.CloseConnection();
-            shouldExitFromApp = true;
-            window.Close();
+            window.MouseButtonPressed += (sender, e) => {
+                drawEvent.ActivateEventMode();
+            }; window.MouseButtonReleased += (sender, e) => {
+                if (networking == null) return;
+                drawEvent.DeactivateEventMode();
+                networking.SendArrayToServer(pixelRenderer.temporaryPixels);
+                pixelRenderer.ClearTmp();
+            };
+
+            window.MouseMoved += (sender, e) => {
+                if (drawEvent.IsEventModeActive() == true) {
+                    float x = e.X / pixelRenderer.pixelCellSize;
+                    float y = e.Y / pixelRenderer.pixelCellSize;
+                    PixelStruct pixelStruct = new PixelStruct(x, y, selectedColor.R, selectedColor.G, selectedColor.B);
+                    pixelRenderer.AddTmp(pixelStruct, x, y);
+                    pixelRenderer.Add(pixelStruct, x, y);
+                }
+                mousePositionData[0] = e.X;
+                mousePositionData[1] = e.Y;
+            };
+
+            window.KeyPressed += (sender, e) => {
+                if (e.Code == Keyboard.Key.I && chatOpenEvent.IsEventModeActive() == false) {
+                    colorPickerEvent.ActivateEventMode();
+                } else if (e.Code == Keyboard.Key.T && chatOpenEvent.IsEventModeActive() == false) {
+                    chatOpenEvent.ActivateEventMode();
+                } else if (e.Code == Keyboard.Key.Escape && chatOpenEvent.IsEventModeActive() == true) {
+                    chatOpenEvent.DeactivateEventMode();
+                }
+            }; window.KeyReleased += (sender, e) => {
+                if (e.Code == Keyboard.Key.I) {
+                    colorPickerEvent.DeactivateEventMode();
+                }
+            };
         }
 
         private static void ReceiveDataFromServer() {
-            while (!shouldExitFromApp) {
+            if (networking == null) return;
+            while (shouldExitFromAppEvent.IsEventModeActive() == false) {
                 object receivedData = networking.ReceiveArrayFromServer();
                 if (receivedData is List<PixelStruct> receivedPixels) {
-                    lock (pixelStructsLock) {
-                        pixelStructs.AddRange(receivedPixels);
-                    }
+                    pixelRenderer.AddRange(receivedPixels);
                 } else if (receivedData is string receivedString) {
-                    Chat.ReceiveMessage(receivedData.ToString());
+                    if (receivedString == "null") continue;
+                    Chat.ReceiveMessage(receivedString);
                 }
                 Thread.Sleep(10);
             }
+        }
+
+        private static void Start(RenderWindow window) {
+            BackgroundGenerator.Initialize(new Vector2u(uint.Parse(propertiesParser.GetValue("WindowWidth")), 
+                                                uint.Parse(propertiesParser.GetValue("WindowHeight"))));
+        }
+
+        private static void Update(RenderWindow window) {
+            BackgroundGenerator.UpdateBackground(window);
+            pixelRenderer.PixelsRendererMethod(window);
+            selectedColor = ColorPicker.HandleColorPicker(window, mousePositionData, colorPickerEvent, selectedColor, 10);
+        }
+
+        private static void UpdateUI(RenderWindow window) {
+            CustomText.UpdateTextFPS(FPSCustomText, clock);
+            window.Draw(FPSCustomText);
+
+            if (chatOpenEvent.IsEventModeActive() == false) return;
+            Chat.UpdateChat(window, customFont, chatOpenEvent);
         }
     }
 }
