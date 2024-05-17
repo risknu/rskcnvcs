@@ -6,21 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="assets\fonts\ARIAL.TTF" />
-    <None Remove="assets\audio\onMove.wav" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="SFML.Net" Version="2.5.1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="assets\fonts\ARIAL.TTF">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="assets\audio\onMove.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 </Project>

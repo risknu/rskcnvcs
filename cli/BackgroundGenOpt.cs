@@ -1,6 +1,5 @@
 using SFML.Graphics;
 using SFML.System;
-using SFML.Window;
 
 namespace RskBox {
     static public class BackgroundGenerator {

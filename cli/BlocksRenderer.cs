@@ -9,7 +9,7 @@ namespace RskBox {
 
         private static readonly object pixelStructsLock = new object();
 
-        public int pixelCellSize = 10;
+        public int pixelCellSize = 10; 
 
         public void PixelsRendererMethod(RenderWindow window) {
             lock (pixelStructsLock) {
@@ -22,9 +22,7 @@ namespace RskBox {
             }
         }
 
-        public void ClearTmp() {
-            temporaryPixels.Clear();
-        }
+        public void ClearTmp() { temporaryPixels.Clear(); }
 
         public void AddTmp(PixelStruct pixelStruct, float x, float y) {
             temporaryPixels.RemoveAll(p => p.x == x && p.y == y);
