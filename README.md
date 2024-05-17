@@ -17,12 +17,16 @@ $ dotnet run # for run
 > [!IMPORTANT]  
 > You must have `.NET` version 8 or higher, as well as a device running `MacOS`/`Linux`/`Windows`.
 
-By following these steps, you can set up everything locally and test or modify the code within the license terms.
+To start the server on your device, you need the `~/rskcnvcs/networking` folder in the main project directory where you should run the following commands:
+```sh
+$ source net_configure.sh && python3 server.py -ipvf 127.0.0.1 -p 2425 # creates necessary directories and files, and starts the server
 
-## Usage
-If you want to modify files and create your own add-ons, I recommend exploring the 'wiki' section of our project. There you will find comprehensive information about installation and building.
-> [!NOTE]
-> This system is under development, please be patient.
+# net_configure manually
+$ mkdir ./logs/ && python3 --version # creates directories and checks the Python version (make sure it's above 3.11 or 3.11)
+$ mkdir ./logs/; python --version # for Windows
+```
+
+By following these steps, you can set up everything locally and test or modify the code within the license terms.
 
 ## Contribution to the Project
 I (the developer) welcome your contribution to the project. Any help is appreciated in creating and improving the project. However, I recommend familiarizing yourself with the `CONTRIBUTING.md` file first.
